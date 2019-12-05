@@ -1,0 +1,219 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class PlayerScript : MonoBehaviour
+{
+
+    private Rigidbody2D rd2d;
+    public float speed;
+    public Text score;
+    private int scoreValue = 0;
+    public Text winText;
+    public Text lifeText;
+    public Text loseText;
+    private int life = 3;
+
+    public AudioSource musicSource;
+    
+    public AudioClip backMusic;
+    public AudioClip winMusic;
+    public AudioClip coinPickup;
+    public AudioClip dmgSound;
+    public AudioClip powerUp;
+
+    public float x = 0.1f;
+    public float y = 0.1f;
+    public float z = 0.1f;
+
+
+    private bool facingRight = true;
+    Animator anim;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        rd2d = GetComponent<Rigidbody2D>();
+        score.text = "Score: " + scoreValue.ToString();
+        winText.text = "";
+        loseText.text = "";
+        lifeText.text = "Lives: " + life.ToString();
+        SetLifeText();
+        musicSource.clip = backMusic;
+        musicSource.Play();
+        anim = GetComponent<Animator>();
+
+    }
+
+     
+
+    // Update is called once per frame
+    void FixedUpdate()
+    {
+
+        
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            anim.SetInteger("State", 1);
+        }
+        if (Input.GetKeyUp(KeyCode.A))
+        {
+            anim.SetInteger("State", 0);
+        }
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            anim.SetInteger("State", 1);
+        }
+        if (Input.GetKeyUp(KeyCode.D))
+        {
+            anim.SetInteger("State", 0);
+        }
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            anim.SetInteger("State", 2);
+        }
+        if (Input.GetKeyUp(KeyCode.W))
+        {
+            anim.SetInteger("State", 0);
+        }
+
+       
+
+        float hozMovement = Input.GetAxis("Horizontal");
+        float vertMovement = Input.GetAxis("Vertical");
+        rd2d.AddForce(new Vector2(hozMovement * speed, vertMovement * speed));
+
+        if (facingRight == false && hozMovement > 0)
+        {
+            Flip();
+        }
+        else if (facingRight == true && hozMovement < 0)
+        {
+            Flip();
+        }
+
+
+    }
+
+
+ 
+
+
+
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.collider.tag == "Coin")
+        {
+            scoreValue += 1;
+            score.text = "Score: " + scoreValue.ToString(); ;
+           
+            musicSource.PlayOneShot(coinPickup);
+            Destroy(collision.collider.gameObject);
+            
+
+            if (scoreValue == 4)
+            {
+                //... then set the text property of our winText object to "You win!"
+
+                transform.position = new Vector2(100.0f, 0.0f);
+            }
+            if (scoreValue >= 8)
+            {
+                //... then set the text property of our winText object to "You win!"
+
+                winText.text = "You win! Game created by Declan Ford";
+                musicSource.Stop();
+                musicSource.clip = winMusic;
+                musicSource.Play();
+                speed = 0;
+                //gameObject.SetActive(false);
+            }
+        }
+
+        if (collision.collider.tag == "Enemy")
+        {
+            life = life - 1;
+            lifeText.text = "Lives: " + life.ToString();
+            musicSource.PlayOneShot(dmgSound);
+            Destroy(collision.collider.gameObject);
+
+            SetLifeText();
+        }
+
+        if (collision.collider.tag == "PowerUp")
+        {
+
+            transform.localScale += new Vector3(x, y, z);
+            musicSource.PlayOneShot(powerUp);
+            Destroy(collision.collider.gameObject);
+        }
+
+        if (collision.collider.tag == "HourGlass")
+        {
+            StartCoroutine(FiveSecondsCooldown());
+            Destroy(collision.collider.gameObject);
+        }
+
+
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if(collision.collider.tag == "Ground")
+        {
+            if(Input.GetKey(KeyCode.W))
+            {
+                rd2d.AddForce(new Vector2(0, 3), ForceMode2D.Impulse);
+                
+            }
+
+            
+        }
+    }
+
+    public IEnumerator FiveSecondsCooldown()
+    {
+        Time.timeScale = 2.0f;
+        yield return new WaitForSeconds(30f); // 
+        Time.timeScale = 1;
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+
+        if (other.gameObject.CompareTag("Enemy"))
+        {
+            other.gameObject.SetActive(false);
+            life = life - 1;
+            SetLifeText();
+        }
+
+    }
+
+
+        void SetLifeText()
+    {
+
+        
+
+        if (life <= 0)
+        {
+            
+            loseText.text = "You Lose! Game created by Declan Ford";
+            gameObject.SetActive(false);
+
+        }
+
+      
+    }
+
+    void Flip()
+    {
+        facingRight = !facingRight;
+        Vector2 Scaler = transform.localScale;
+        Scaler.x = Scaler.x * -1;
+        transform.localScale = Scaler;
+    }
+}
